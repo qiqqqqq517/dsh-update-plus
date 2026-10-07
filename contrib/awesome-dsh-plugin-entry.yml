@@ -1,0 +1,6 @@
+url: https://github.com/qiqqqqq517/dsh-update-plus
+name: qiqqqqq517/dsh-update-plus
+category: dev
+description:
+  en: 'Channel-aware updater and one-click restart for the DeepSeek Harness desktop app: choose the stable, beta or nightly channel, download the official installer directly and verify it by SHA-512, then restart the app together with its Host.'
+  zh: 'DSH 桌面端更新与重启插件：可选稳定版、测试版或每日构建通道，直接下载官方安装包并用 SHA-512 校验，随后重启应用与 Host。'
