@@ -1,0 +1,14 @@
+# dsh-update-plus bundle patch.
+#
+# One loader row named after the PACKAGE ROOT, deliberately: the host's
+# client-module scan resolves a row's specifier to a package root and reads
+# `dsh.client` from there to discover the settings page. A row named after a
+# subpath would be skipped by design and the panel would never appear even
+# though the host half works.
+#
+# The row is inert on the host (see lib/index.js) except for the HTTP API it
+# registers when a web server is present.
+- insert:
+    - id: dsh-update-plus
+      name: dsh-update-plus
+      config: {}

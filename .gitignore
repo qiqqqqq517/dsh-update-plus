@@ -1,0 +1,21 @@
+# Never commit these.
+
+# A pnpm/npm install of this package (the plugin has no runtime dependencies,
+# but a local `pnpm install` still creates this).
+node_modules/
+
+# Installer downloads and restart logs, if anyone points the plugin's data
+# directory inside the checkout.
+downloads/
+*.part
+restart.log
+
+# Editor / OS noise.
+.DS_Store
+Thumbs.db
+*.swp
+
+# Local backups written by install.mjs and by hand.
+*.bak
+*.bak_*
+*.before-bridge
