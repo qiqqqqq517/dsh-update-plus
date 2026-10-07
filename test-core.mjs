@@ -3,12 +3,18 @@
  * Run: node test-core.mjs
  */
 import assert from 'node:assert/strict';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   CHANNEL_IDS, channelTable, parseManifest, compareVersions,
   findDesktopInstall, readBundledDshVersion, readAppUpdateConfig,
   resolveLauncher, resolveAllChannels, buildRestartPlan,
 } from './lib/core.js';
+
+// Restart plans are written to the system temp directory, never into the
+// checkout: a test that drops `restart.cmd` next to the source leaves the
+// working tree dirty, and the drift check is then the thing that complains.
+const SANDBOX = join(tmpdir(), 'dsh-update-plus-test');
 
 let pass = 0;
 let fail = 0;
@@ -77,8 +83,17 @@ console.log('\n--- installed build discovery (this machine) ---');
 const explicitRoot = process.env.UP_ROOT;
 const install = findDesktopInstall(explicitRoot);
 if (install === undefined) {
-  console.log(`      execPath=${process.execPath}`);
-  console.log(`      argv[1]=${process.argv?.[1]}`);
+  // Discovery is anchored on the process's own location, which only identifies a
+  // desktop installation when this suite runs under the host runtime. Say that
+  // plainly instead of dying later with "cannot read properties of undefined" —
+  // a wrong runtime is a harness mistake, not a plugin defect.
+  console.error('\nNo desktop installation was found from this process.');
+  console.error(`  execPath = ${process.execPath}`);
+  console.error(`  argv[1]  = ${process.argv?.[1]}`);
+  console.error('\nRun the suites through run-tests.mjs, which re-executes them under');
+  console.error('the host runtime (the Electron binary with ELECTRON_RUN_AS_NODE=1).');
+  console.error('That is also the only runtime where reading inside app.asar works.');
+  process.exit(2);
 }
 check('finds an installation', () => assert.ok(install !== undefined, 'no installation found'));
 check('reports a version', () => assert.match(String(install.version), /^\d+\.\d+\.\d+/));
@@ -111,13 +126,14 @@ check('a bogus explicit root does not silently fall back', () => {
 
 console.log('\n--- restart plan (script written, nothing spawned) ---');
 check('builds a detached restart script for this install', () => {
-  const plan = buildRestartPlan({ install, launcher: resolveLauncher(install), delayMs: 3000, dataDir: 'D:\\DSH\\DSH Desktop\\_uplus-test' });
+  const plan = buildRestartPlan({ install, launcher: resolveLauncher(install), delayMs: 3000, dataDir: SANDBOX });
   assert.equal(plan.ok, true, plan.error);
   assert.ok(plan.scriptPath.endsWith('restart.cmd'));
   assert.ok(plan.executable.endsWith('.exe'));
+  assert.ok(plan.scriptPath.startsWith(SANDBOX), 'the script must land in the sandbox, not the checkout');
 });
 check('refuses cleanly when no launcher is known', () => {
-  const plan = buildRestartPlan({ install: undefined, launcher: undefined, dataDir: 'D:\\DSH\\DSH Desktop\\_uplus-test' });
+  const plan = buildRestartPlan({ install: undefined, launcher: undefined, dataDir: SANDBOX });
   assert.equal(plan.ok, false);
   assert.equal(plan.errorCode, 'NO_LAUNCHER');
 });
